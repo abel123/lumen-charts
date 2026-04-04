@@ -2403,7 +2403,7 @@ pub extern "C" fn chart_format_time(
 #[cfg_attr(not(target_arch = "wasm32"), unsafe(no_mangle))]
 pub extern "C" fn chart_series_set_markers(
     chart: *mut Chart,
-    _series_id: u32,
+    series_id: u32,
     markers_json: *const std::os::raw::c_char,
 ) -> bool {
     let chart = unsafe {
@@ -2418,7 +2418,7 @@ pub extern "C" fn chart_series_set_markers(
         Ok(s) => s,
         Err(_) => return false,
     };
-    if chart.state.overlays.set_markers_from_json(json_str) {
+    if chart.state.overlays.set_markers_from_json(series_id, json_str) {
         chart
             .state
             .pending_mask

@@ -86,6 +86,7 @@ pub enum MarkerPosition {
 /// A marker placed on a specific bar
 #[derive(Debug, Clone)]
 pub struct SeriesMarker {
+    pub series_id: u32,
     pub time: i64,
     pub shape: MarkerShape,
     pub position: MarkerPosition,
@@ -95,8 +96,9 @@ pub struct SeriesMarker {
 }
 
 impl SeriesMarker {
-    pub fn new(time: i64, shape: MarkerShape, position: MarkerPosition) -> Self {
+    pub fn new(series_id: u32, time: i64, shape: MarkerShape, position: MarkerPosition) -> Self {
         SeriesMarker {
+            series_id,
             time,
             shape,
             position,
@@ -258,9 +260,10 @@ impl Overlays {
 
     // --- Markers ---
 
-    /// Set markers (replaces all existing markers).
-    pub fn set_markers(&mut self, markers: Vec<SeriesMarker>) {
-        self.markers = markers;
+    /// Set markers (replaces all existing markers for the given series).
+    pub fn set_markers(&mut self, series_id: u32, markers: Vec<SeriesMarker>) {
+        self.markers.retain(|m| m.series_id != series_id);
+        self.markers.extend(markers);
     }
 
     /// Add a single marker.
@@ -290,7 +293,7 @@ impl Overlays {
     /// Set markers from a JSON array string.
     /// JSON format: [{"time":1704153600,"shape":"arrowUp","position":"belowBar",
     ///   "color":[0.15,0.65,0.6,1.0],"size":8,"text":"Buy"}, ...]
-    pub fn set_markers_from_json(&mut self, json_str: &str) -> bool {
+    pub fn set_markers_from_json(&mut self, series_id: u32, json_str: &str) -> bool {
         let items: Vec<serde_json::Value> = match serde_json::from_str(json_str) {
             Ok(v) => v,
             Err(_) => return false,
@@ -320,7 +323,7 @@ impl Overlays {
                 _ => MarkerPosition::AboveBar,
             };
 
-            let mut marker = SeriesMarker::new(time, shape, position);
+            let mut marker = SeriesMarker::new(series_id, time, shape, position);
 
             if let Some(color) = item.get("color").and_then(|v| v.as_array()) {
                 if color.len() == 4 {
@@ -342,7 +345,8 @@ impl Overlays {
             markers.push(marker);
         }
 
-        self.markers = markers;
+        self.markers.retain(|m| m.series_id != series_id);
+        self.markers.extend(markers);
         true
     }
 
@@ -426,8 +430,9 @@ mod tests {
 
     #[test]
     fn test_series_marker_create() {
-        let marker = SeriesMarker::new(1000, MarkerShape::ArrowUp, MarkerPosition::BelowBar);
+        let marker = SeriesMarker::new(0, 1000, MarkerShape::ArrowUp, MarkerPosition::BelowBar);
         assert_eq!(marker.time, 1000);
+        assert_eq!(marker.series_id, 0);
         assert_eq!(marker.shape, MarkerShape::ArrowUp);
         assert_eq!(marker.position, MarkerPosition::BelowBar);
         assert_eq!(marker.size, 8.0);
@@ -443,19 +448,19 @@ mod tests {
             close: 55.0,
         };
 
-        let above = SeriesMarker::new(100, MarkerShape::ArrowDown, MarkerPosition::AboveBar);
+        let above = SeriesMarker::new(0, 100, MarkerShape::ArrowDown, MarkerPosition::AboveBar);
         assert!((above.y_price(&bar) - 60.0).abs() < f64::EPSILON);
 
-        let below = SeriesMarker::new(100, MarkerShape::ArrowUp, MarkerPosition::BelowBar);
+        let below = SeriesMarker::new(0, 100, MarkerShape::ArrowUp, MarkerPosition::BelowBar);
         assert!((below.y_price(&bar) - 40.0).abs() < f64::EPSILON);
 
-        let at_price = SeriesMarker::new(100, MarkerShape::Circle, MarkerPosition::AtPrice);
+        let at_price = SeriesMarker::new(0, 100, MarkerShape::Circle, MarkerPosition::AtPrice);
         assert!((at_price.y_price(&bar) - 55.0).abs() < f64::EPSILON);
     }
 
     #[test]
     fn test_marker_builder() {
-        let marker = SeriesMarker::new(500, MarkerShape::Circle, MarkerPosition::AboveBar)
+        let marker = SeriesMarker::new(0, 500, MarkerShape::Circle, MarkerPosition::AboveBar)
             .with_color(Color::rgba(1.0, 0.0, 0.0, 1.0))
             .with_text("Buy")
             .with_size(12.0);
@@ -467,11 +472,13 @@ mod tests {
     fn test_overlays_markers() {
         let mut ov = Overlays::new();
         ov.add_marker(SeriesMarker::new(
+            0,
             100,
             MarkerShape::ArrowUp,
             MarkerPosition::BelowBar,
         ));
         ov.add_marker(SeriesMarker::new(
+            1,
             200,
             MarkerShape::ArrowDown,
             MarkerPosition::AboveBar,
@@ -486,15 +493,16 @@ mod tests {
     fn test_set_markers_replaces() {
         let mut ov = Overlays::new();
         ov.add_marker(SeriesMarker::new(
+            0,
             100,
             MarkerShape::Circle,
             MarkerPosition::AtPrice,
         ));
         assert_eq!(ov.markers.len(), 1);
 
-        ov.set_markers(vec![
-            SeriesMarker::new(200, MarkerShape::Square, MarkerPosition::AboveBar),
-            SeriesMarker::new(300, MarkerShape::Square, MarkerPosition::AboveBar),
+        ov.set_markers(0, vec![
+            SeriesMarker::new(0, 200, MarkerShape::Square, MarkerPosition::AboveBar),
+            SeriesMarker::new(0, 300, MarkerShape::Square, MarkerPosition::AboveBar),
         ]);
         assert_eq!(ov.markers.len(), 2);
         assert_eq!(ov.markers[0].time, 200);
