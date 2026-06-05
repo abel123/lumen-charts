@@ -282,7 +282,7 @@ pub extern "C" fn chart_create(
 
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
         backends: wgpu::Backends::all(),
-        ..Default::default()
+        ..wgpu::InstanceDescriptor::new_without_display_handle()
     });
 
     let surface = unsafe {
@@ -330,7 +330,7 @@ pub extern "C" fn chart_create(
                         0,
                     ));
                     wgpu::SurfaceTargetUnsafe::RawHandle {
-                        raw_display_handle: raw_display,
+                        raw_display_handle: Some(raw_display),
                         raw_window_handle: raw_window,
                     }
                 }
@@ -358,7 +358,7 @@ pub extern "C" fn chart_create(
                                 .expect("display_handle (wl_display) must not be null"),
                         ));
                     wgpu::SurfaceTargetUnsafe::RawHandle {
-                        raw_display_handle: raw_display,
+                        raw_display_handle: Some(raw_display),
                         raw_window_handle: raw_window,
                     }
                 }

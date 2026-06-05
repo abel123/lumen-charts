@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use vello::kurbo::Affine;
-use vello::peniko::{Blob, Brush, Color, Fill, Font};
+use vello::peniko::{Blob, Brush, Color, Fill, FontData};
 use vello::Scene;
 use vello_encoding::Glyph;
 
@@ -12,8 +12,8 @@ use skrifa::MetadataProvider;
 static FONT_DATA: &[u8] = include_bytes!("../fonts/Inter.ttf");
 
 /// Get the embedded chart font (for passing to Vello draw_glyphs)
-pub fn chart_font() -> Font {
-    Font::new(Blob::new(Arc::new(FONT_DATA.to_vec())), 0)
+pub fn chart_font() -> FontData {
+    FontData::new(Blob::new(Arc::new(FONT_DATA.to_vec())), 0)
 }
 
 /// Get a skrifa FontRef for glyph metrics (uses the raw embedded bytes directly)
@@ -27,7 +27,7 @@ fn font_ref() -> skrifa::FontRef<'static> {
 /// `x`, `y` are in logical coordinates (pre-scale). `y` is the baseline.
 pub fn draw_text(
     scene: &mut Scene,
-    font: &Font,
+    font: &FontData,
     text: &str,
     x: f64,
     y: f64,
@@ -70,7 +70,7 @@ pub fn draw_text(
 }
 
 /// Measure the width of a text string (in logical pixels).
-pub fn measure_text(_font: &Font, text: &str, font_size: f32) -> f32 {
+pub fn measure_text(_font: &FontData, text: &str, font_size: f32) -> f32 {
     if text.is_empty() {
         return 0.0;
     }

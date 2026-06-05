@@ -48,7 +48,6 @@ impl VelloRenderer {
                 label: Some("chart-device"),
                 ..Default::default()
             },
-            None,
         ))
         .expect("Failed to create GPU device");
 
@@ -78,10 +77,10 @@ impl VelloRenderer {
         let vello_renderer = VelloRendererInner::new(
             &device,
             RendererOptions {
-                surface_format: Some(format),
                 use_cpu: false,
                 antialiasing_support: vello::AaSupport::area_only(),
                 num_init_threads: None,
+                pipeline_cache: None,
             },
         )
         .expect("Failed to create Vello renderer");
@@ -148,9 +147,10 @@ impl Renderer for VelloRenderer {
         state.crosshair_render_count += 1;
 
         let surface_texture = match self.surface.get_current_texture() {
-            Ok(t) => t,
-            Err(e) => {
-                log::error!("Failed to get surface texture: {}", e);
+            wgpu::CurrentSurfaceTexture::Success(t)
+            | wgpu::CurrentSurfaceTexture::Suboptimal(t) => t,
+            e => {
+                log::error!("Failed to get surface texture: {:?}", e);
                 return;
             }
         };
@@ -162,12 +162,16 @@ impl Renderer for VelloRenderer {
             antialiasing_method: AaConfig::Area,
         };
 
+        let surface_view = surface_texture
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
+
         self.vello_renderer
-            .render_to_surface(
+            .render_to_texture(
                 &self.device,
                 &self.queue,
                 self.backend.scene(),
-                &surface_texture,
+                &surface_view,
                 &render_params,
             )
             .expect("Vello render failed");
