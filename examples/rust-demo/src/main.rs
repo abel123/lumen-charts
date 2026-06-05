@@ -292,9 +292,15 @@ impl AppState {
 
         // --- Single surface acquire ---
         let surface_texture = match pipeline.surface.get_current_texture() {
-            Ok(t) => t,
-            Err(_) => return,
+            wgpu::CurrentSurfaceTexture::Success(t)
+            | wgpu::CurrentSurfaceTexture::Suboptimal(t) => t,
+            _ => return,
         };
+
+        // Create the view once — used by both Vello and egui passes.
+        let surface_view = surface_texture
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
 
         // --- Render chart via Vello (invalidation-aware caching) ---
         {
@@ -332,11 +338,11 @@ impl AppState {
 
             pipeline
                 .vello_renderer
-                .render_to_surface(
+                .render_to_texture(
                     &pipeline.device,
                     &pipeline.queue,
                     pipeline.backend.scene(),
-                    &surface_texture,
+                    &surface_view,
                     &render_params,
                 )
                 .expect("Vello render failed");
@@ -344,9 +350,7 @@ impl AppState {
 
         // --- Overlay egui on top ---
         {
-            let surface_view = surface_texture
-                .texture
-                .create_view(&wgpu::TextureViewDescriptor::default());
+            let surface_view = &surface_view;
 
             let screen_descriptor = egui_wgpu::ScreenDescriptor {
                 size_in_pixels: [
@@ -390,6 +394,7 @@ impl AppState {
                     color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                         view: &surface_view,
                         resolve_target: None,
+                        depth_slice: None,
                         ops: wgpu::Operations {
                             load: wgpu::LoadOp::Load,
                             store: wgpu::StoreOp::Store,
@@ -442,7 +447,7 @@ impl ApplicationHandler for App {
         // Create wgpu surface from the window
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::all(),
-            ..Default::default()
+            ..wgpu::InstanceDescriptor::new_without_display_handle()
         });
         let surface = instance.create_surface(window.clone()).unwrap();
 
@@ -466,7 +471,14 @@ impl ApplicationHandler for App {
             None,
             None,
         );
-        let egui_renderer = egui_wgpu::Renderer::new(device_ref, surface_format, None, 1, false);
+        let egui_renderer = egui_wgpu::Renderer::new(
+            device_ref,
+            surface_format,
+            egui_wgpu::RendererOptions {
+                msaa_samples: 1,
+                ..Default::default()
+            },
+        );
 
         // Create ChartApi via SDK — wraps Chart with safe v5 methods
         let mut chart =
