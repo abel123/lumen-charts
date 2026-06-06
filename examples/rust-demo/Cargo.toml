@@ -7,12 +7,12 @@ publish = false
 
 [dependencies]
 lumen-charts = { path = "../..", version = "2.0.2" }
-vello = "0.4"
+vello = "0.9"
 winit = "0.30"
-wgpu = "23"
+wgpu = "29"
 pollster = "0.4"
 log = "0.4"
 env_logger = "0.11"
-egui = "0.30"
-egui-wgpu = "0.30"
-egui-winit = "0.30"
+egui = "0.34"
+egui-wgpu = "0.34"
+egui-winit = "0.34"

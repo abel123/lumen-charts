@@ -15,7 +15,7 @@ pub struct VelloBackend {
     scale: Affine,
     scale_x: f64,
     scale_y: f64,
-    font: peniko::Font,
+    font: peniko::FontData,
 }
 
 impl VelloBackend {
@@ -211,7 +211,7 @@ impl DrawBackend for VelloBackend {
     fn clip_rect(&mut self, x: f64, y: f64, w: f64, h: f64) {
         let rect = KurboRect::new(x, y, x + w, y + h);
         self.scene
-            .push_layer(peniko::Mix::Clip, 1.0, self.scale, &rect);
+            .push_clip_layer(Fill::NonZero, self.scale, &rect);
     }
 
     fn restore_clip(&mut self) {
