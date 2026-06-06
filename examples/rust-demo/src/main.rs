@@ -392,7 +392,7 @@ impl AppState {
                 let render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                     label: Some("egui-render-pass"),
                     color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                        view: &surface_view,
+                        view: surface_view,
                         resolve_target: None,
                         depth_slice: None,
                         ops: wgpu::Operations {
