@@ -1,0 +1,17 @@
+[package]
+name = "zeus"
+version = "0.1.0"
+edition = "2021"
+authors = ["Lumen Charts Contributors"]
+publish = false
+description = "Iced-based desktop terminal for Lumen Charts"
+
+[dependencies]
+lumen-charts-sdk = { path = "../chart-sdk", version = "3.0.0" }
+iced = { version = "0.14", default-features = true, features = [
+    "canvas",
+    "wgpu",
+] }
+log = "0.4"
+env_logger = "0.11"
+image = "0.25.10"
