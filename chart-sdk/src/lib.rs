@@ -37,7 +37,6 @@
 // ── Chart engine modules ─────────────────────────────────────────────────
 pub mod chart_model;
 pub mod chart_options;
-pub mod chart_renderer;
 pub mod chart_state;
 pub mod color;
 pub mod data_layer;
@@ -45,12 +44,13 @@ pub mod formatters;
 pub mod invalidation;
 pub mod overlays;
 pub mod price_scale;
-pub mod renderers;
+pub mod render;
 pub mod sample_data;
 pub mod scale;
 pub mod series;
 pub mod tick_marks;
 pub mod time_scale;
+pub mod widget;
 
 // ── Re-exports of commonly used types ────────────────────────────────────
 pub use crate::chart_model::OhlcBar;

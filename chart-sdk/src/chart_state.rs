@@ -328,17 +328,20 @@ impl ChartState {
         self.pending_mask.set_global(InvalidationLevel::Full);
     }
 
-    /// Distributes total plot_area height among the panes based on stretch
+    /// Distributes total plot_area height among the panes based on stretch.
+    ///
+    /// Margins apply only to the OUTER edges of the entire chart (top,
+    /// right, bottom, left). Panes are stacked flush against each other
+    /// with no internal gap — chart-level margins are subtracted once
+    /// from the total height, then the remaining space is divided among
+    /// panes according to their `height_stretch`.
     pub fn update_panes_layout(&mut self) {
         let total_stretch: f32 = self.panes.iter().map(|p| p.height_stretch).sum();
         if total_stretch == 0.0 {
             return;
         }
 
-        let num_panes = self.panes.len() as f32;
-        let gap = 1.0;
-        let available_height = self.layout.plot_area.height - (gap * (num_panes - 1.0).max(0.0));
-
+        let available_height = self.layout.plot_area.height;
         let mut current_y = self.layout.plot_area.y;
 
         for pane in &mut self.panes {
@@ -349,7 +352,7 @@ impl ChartState {
                 width: self.layout.plot_area.width,
                 height: pane_height,
             };
-            current_y += pane_height + gap;
+            current_y += pane_height;
         }
     }
 
@@ -1867,8 +1870,8 @@ mod tests {
         let mut state = make_state();
         let full_height = state.panes[0].layout_rect.height;
         let _pane_id = state.add_pane(1.0); // equal stretch
-                                            // With 1px gap, each pane should be roughly (full_height - 1) / 2
-        let half = (full_height - 1.0) / 2.0;
+                                            // No internal gap — panes share the full height
+        let half = full_height / 2.0;
         assert!((state.panes[0].layout_rect.height - half).abs() < 1.0);
         assert!((state.panes[1].layout_rect.height - half).abs() < 1.0);
     }
@@ -1958,11 +1961,12 @@ mod tests {
 
         // Pane 0 starts at the top of the plot area
         assert_eq!(state.panes[0].layout_rect.y, state.layout.plot_area.y);
-        // Pane 1 starts after pane 0 + gap
-        let expected_y1 = state.panes[0].layout_rect.y + state.panes[0].layout_rect.height + 1.0;
+        // Pane 1 starts immediately after pane 0 (no internal gap —
+        // margins apply only to the whole chart, not between panes)
+        let expected_y1 = state.panes[0].layout_rect.y + state.panes[0].layout_rect.height;
         assert!((state.panes[1].layout_rect.y - expected_y1).abs() < 0.5);
-        // Pane 2 starts after pane 1 + gap
-        let expected_y2 = state.panes[1].layout_rect.y + state.panes[1].layout_rect.height + 1.0;
+        // Pane 2 starts immediately after pane 1
+        let expected_y2 = state.panes[1].layout_rect.y + state.panes[1].layout_rect.height;
         assert!((state.panes[2].layout_rect.y - expected_y2).abs() < 0.5);
     }
 

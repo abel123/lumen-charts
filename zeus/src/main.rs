@@ -24,8 +24,8 @@
 use iced::widget::{button, column, text, Column, Row, Space};
 use iced::{Element, Length, Task};
 
-use lumen_charts_sdk::renderers::iced::{ChartWithSeparators, SeparatorMessage};
 use lumen_charts_sdk::sample_data::sample_data;
+use lumen_charts_sdk::widget::{ChartWidget, SeparatorMessage};
 use lumen_charts_sdk::{
     ChartApi, Color, HistogramDataPoint, LineDataPoint, OhlcBar, PaneApi, SeriesApi,
     SeriesDefinition,
@@ -124,7 +124,7 @@ impl From<SeparatorMessage> for Message {
 
 struct ChartApp {
     /// The SDK widget — owns the chart. Use `with_chart_mut(...)` to mutate.
-    chart_view: ChartWithSeparators,
+    chart_view: ChartWidget,
     current_series_type: usize,
     overlay_active: bool,
     overlay_series: Option<SeriesApi>,
@@ -155,7 +155,7 @@ impl ChartApp {
         chart.render();
 
         Self {
-            chart_view: ChartWithSeparators::new(chart),
+            chart_view: ChartWidget::new(chart),
             current_series_type: 0,
             overlay_active: false,
             overlay_series: None,
