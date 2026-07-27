@@ -23,13 +23,35 @@
 
 use iced::widget::{button, column, text, Column, Row, Space};
 use iced::{Element, Length, Task};
+mod api;
+pub mod chart_model;
+pub mod chart_options;
+pub mod chart_state;
+pub mod color;
+pub mod data_layer;
+pub mod formatters;
+pub mod invalidation;
+pub mod overlays;
+pub mod price_scale;
+pub mod render;
+pub mod sample_data;
+pub mod scale;
+pub mod series;
+pub mod tick_marks;
+pub mod time_scale;
+pub mod widget;
 
-use lumen_charts_sdk::sample_data::sample_data;
-use lumen_charts_sdk::widget::{ChartWidget, SeparatorMessage};
-use lumen_charts_sdk::{
-    ChartApi, Color, HistogramDataPoint, LineDataPoint, OhlcBar, PaneApi, SeriesApi,
-    SeriesDefinition,
+use crate::api::{ChartApi, PaneApi, SeriesApi, SeriesDefinition};
+// ── Re-exports of commonly used types ────────────────────────────────────
+pub use crate::chart_model::OhlcBar;
+pub use crate::color::{Color, ColorName};
+pub use crate::series::{
+    AreaSeriesOptions, BaselineSeriesOptions, CandlestickOptions, HistogramDataPoint,
+    HistogramSeriesOptions, LineDataPoint, LineSeriesOptions, PriceLineOptions, SeriesType,
 };
+
+use crate::sample_data::sample_data;
+use crate::widget::{ChartWidget, SeparatorMessage};
 
 // ─── Series type labels ────────────────────────────────────────────────────
 const SERIES_TYPES: [&str; 6] = ["OHLC", "Candle", "Line", "Area", "Hist", "Baseline"];

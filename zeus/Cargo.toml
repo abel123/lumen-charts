@@ -1,18 +1,32 @@
 [package]
 name = "zeus"
-version = "0.1.0"
+version = "3.0.0"
 edition = "2021"
 authors = ["Lumen Charts Contributors"]
-publish = false
-description = "Iced-based desktop terminal for Lumen Charts"
+description = "GPU-accelerated charting library inspired by Lightweight Charts"
+license = "Apache-2.0"
+repository = "https://github.com/jagtesh/lumen-charts"
+homepage = "https://github.com/jagtesh/lumen-charts"
+readme = "../README.md"
+keywords = ["chart", "gpu", "vello", "wgpu", "trading"]
+categories = ["graphics", "rendering", "visualization"]
+rust-version = "1.97"
+
+[features]
+default = []
 
 [dependencies]
-lumen-charts-sdk = { path = "../chart-sdk", version = "3.0.0" }
+parley = "0.10"
+pollster = "0.4"
+chrono = { version = "0.4", features = ["serde"] }
+serde = { version = "1.0", features = ["derive", "alloc"] }
+serde_json = "1.0"
+log = "0.4"
+env_logger = "0.11"
 iced = { version = "0.14", default-features = true, features = [
     "canvas",
     "wgpu",
+    "thread-pool",
+    "advanced",
 ] }
-log = "0.4"
-env_logger = "0.11"
-image = "0.25.10"
-ibapi = "3.3.0"
+iced_split = "0.1.0"
