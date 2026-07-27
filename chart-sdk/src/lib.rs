@@ -1204,6 +1204,31 @@ impl ChartApi {
         Some(y + h)
     }
 
+    /// Get the height fraction (0..=1) of a pane relative to all panes.
+    pub fn pane_height_fraction(&self, pane: &PaneApi) -> f32 {
+        let idx = pane.index as usize;
+        self.inner.state.pane_height_fraction(idx)
+    }
+
+    /// Total plot-area height in CSS pixels.
+    pub fn plot_area_height(&self) -> f32 {
+        self.inner.state.layout.plot_area.height
+    }
+
+    /// Set the height fraction of a pane (0..=1). The other panes share the
+    /// remaining height proportionally to their current fractions.
+    ///
+    /// Returns `true` if the layout changed.
+    pub fn set_pane_height_fraction(&mut self, pane: &PaneApi, fraction: f32) -> bool {
+        let idx = pane.index as usize;
+        if self.inner.state.set_pane_height_fraction(idx, fraction) {
+            self.invalidate();
+            true
+        } else {
+            false
+        }
+    }
+
     // -- Options --
 
     /// Apply chart options from a JSON string.

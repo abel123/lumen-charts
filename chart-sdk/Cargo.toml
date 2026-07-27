@@ -30,4 +30,6 @@ iced = { version = "0.14", default-features = true, features = [
     "canvas",
     "wgpu",
     "thread-pool",
+    "advanced",
 ] }
+iced_split = "0.1.0"

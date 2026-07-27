@@ -32,174 +32,127 @@ pub fn render_bottom_scene<'a>(b: &mut IcedBackend<'a>, state: &ChartState) {
     }
 
     let layout = &state.layout;
-    let time_ticks = generate_time_ticks(&state.data.bars, &state.time_scale, &layout.plot_area);
-
     let sf = layout.scale_factor;
     b.set_scale(sf, sf);
 
-    let bounds = iced::Rectangle {
-        x: layout.plot_area.x as f32,
-        y: layout.plot_area.y as f32,
-        width: layout.plot_area.width as f32,
-        height: layout.plot_area.height as f32,
-    };
-    b.frame.with_clip(bounds, |frame| {
-        let mut nested_frame = IcedBackend {
-            frame: frame,
-            sx: b.sx,
-            sy: b.sy,
-            _marker: std::marker::PhantomData,
-        };
-        draw_background(&mut nested_frame, layout);
-        draw_grid(&mut nested_frame, state, &time_ticks);
-        // Watermark behind bars (global, on pane 0)
-        if state.overlays.watermark.visible {
-            draw_watermark(&mut nested_frame, state);
-        }
-    });
-
-    // ── Per-pane rendering: each pane is a clipped virtual surface ──
-    for (pane_idx, pane) in state.panes.iter().enumerate() {
-        let r = &pane.layout_rect;
-
-        let bounds = iced::Rectangle {
-            x: r.x as f32,
-            y: r.y as f32,
-            width: r.width as f32,
-            height: r.height as f32,
-        };
-
-        //return;
-        b.frame.with_clip(bounds, |clip_frame| {
-            // Construct a nested IcedBackend bound to the clipped frame.
-            // **Critical**: inherit `b.sx`/`b.sy` — the device-scale
-            // factor set by `render_bottom_scene` upstream. Setting
-            // them to `0.0` would zero out every pixel coordinate and
-            // nothing would render.
-
-            let mut nested_frame = IcedBackend {
-                frame: clip_frame,
-                sx: b.sx,
-                sy: b.sy,
-                _marker: std::marker::PhantomData,
-            };
-
-            // Opaque background for non-primary panes (pane 0 uses the
-            // global background drawn earlier in `render_bottom_scene`).
-            if pane_idx > 0 {
-                nested_frame.fill_rect(
-                    r.x as f64,
-                    r.y as f64,
-                    r.width as f64,
-                    r.height as f64,
-                    BG_COLOR,
-                );
-            }
-
-            // Draw primary series on pane 0
-            if pane_idx == 0 {
-                match state.active_series_type {
-                    SeriesType::Ohlc => draw_ohlc_bars(&mut nested_frame, 0, state),
-                    SeriesType::Candlestick => draw_candlestick_bars(&mut nested_frame, 0, state),
-                    SeriesType::Line => draw_line_series_from_ohlc(&mut nested_frame, 0, state),
-                    SeriesType::Area => {
-                        let points = ohlc_to_line_points(&state.data.bars);
-                        let opts = crate::series::AreaSeriesOptions::default();
-                        draw_area_series(&mut nested_frame, 0, state, &points, &opts);
-                    }
-                    SeriesType::Baseline => {
-                        let points = ohlc_to_line_points(&state.data.bars);
-                        let opts = crate::series::BaselineSeriesOptions::default();
-                        draw_baseline_series(&mut nested_frame, 0, state, &points, &opts);
-                    }
-                    SeriesType::Histogram => {
-                        let points: Vec<crate::series::HistogramDataPoint> = state
-                            .data
-                            .bars
-                            .iter()
-                            .map(|bar| crate::series::HistogramDataPoint {
-                                time: bar.time,
-                                value: bar.close,
-                                color: None,
-                            })
-                            .collect();
-                        let opts = crate::series::HistogramSeriesOptions::default();
-                        draw_histogram_series(&mut nested_frame, 0, state, &points, &opts);
-                    }
-                }
-            }
-
-            // Draw additional series assigned to this pane
-            for series in &state.series.series {
-                if !series.visible || series.pane_index != pane_idx {
-                    continue;
-                }
-                match (&series.series_type, &series.data) {
-                    (SeriesType::Line, SeriesData::Line(pts)) => {
-                        draw_line_series(
-                            &mut nested_frame,
-                            pane_idx,
-                            state,
-                            pts,
-                            &series.line_options,
-                        );
-                    }
-                    (SeriesType::Area, SeriesData::Line(pts)) => {
-                        draw_area_series(
-                            &mut nested_frame,
-                            pane_idx,
-                            state,
-                            pts,
-                            &series.area_options,
-                        );
-                    }
-                    (SeriesType::Baseline, SeriesData::Line(pts)) => {
-                        draw_baseline_series(
-                            &mut nested_frame,
-                            pane_idx,
-                            state,
-                            pts,
-                            &series.baseline_options,
-                        );
-                    }
-                    (SeriesType::Candlestick, SeriesData::Ohlc(bars)) => {
-                        draw_candlestick_bars_data(
-                            &mut nested_frame,
-                            pane_idx,
-                            state,
-                            bars,
-                            &series.candlestick_options,
-                        );
-                    }
-                    (SeriesType::Histogram, SeriesData::Histogram(pts)) => {
-                        draw_histogram_series(
-                            &mut nested_frame,
-                            pane_idx,
-                            state,
-                            pts,
-                            &series.histogram_options,
-                        );
-                    }
-                    _ => {}
-                }
-            }
-
-            // Per-pane overlays (price lines and last value marker for this pane)
-            if pane_idx == 0 {
-                draw_price_lines(&mut nested_frame, state, pane_idx);
-                draw_series_markers(&mut nested_frame, state);
-                draw_last_value_marker(&mut nested_frame, state, pane_idx);
-            }
-        })
+    // Draw every pane as a single virtual surface (clipped to its rect).
+    let pane_count = state.panes.len();
+    for pane_idx in 0..pane_count {
+        render_pane(pane_idx, b, state);
     }
 
     // ── Post-clip: gutters and borders on top of all panes ──
+    let time_ticks =
+        generate_time_ticks(&state.data.bars, &state.time_scale, &state.layout.plot_area);
     draw_y_axis(b, state, layout);
     draw_x_axis(b, &time_ticks, layout);
 
     // Price line labels render in the gutter (ABOVE grid labels, outside clip)
     draw_price_line_labels(b, state);
     draw_last_value_label(b, state);
+}
+
+/// Per-pane rendering — draws everything that lives INSIDE the pane
+/// rectangle. Used both by [`render_bottom_scene`] (which wraps this in
+/// `with_clip`) and by the multi-canvas widget tree
+/// (`paint_pane_to_iced_frame`) where each canvas already has its own
+/// widget bounds.
+pub fn render_pane<'a>(pane_idx: usize, b: &mut IcedBackend<'a>, state: &ChartState) {
+    let layout = &state.layout;
+    let time_ticks = generate_time_ticks(&state.data.bars, &state.time_scale, &layout.plot_area);
+
+    let sf = layout.scale_factor;
+    b.set_scale(sf, sf);
+
+    draw_background(b, layout);
+    draw_grid(b, state, &time_ticks);
+    if state.overlays.watermark.visible {
+        draw_watermark(b, state);
+    }
+
+    // Pane-local background + series + overlays for this pane only.
+    let pane = match state.panes.get(pane_idx) {
+        Some(p) => p,
+        None => return,
+    };
+    let r = &pane.layout_rect;
+
+    // Opaque background for non-primary panes (pane 0 uses the
+    // global background drawn earlier).
+    if pane_idx > 0 {
+        b.fill_rect(
+            r.x as f64,
+            r.y as f64,
+            r.width as f64,
+            r.height as f64,
+            BG_COLOR,
+        );
+    }
+
+    // Draw primary series on pane 0
+    if pane_idx == 0 {
+        match state.active_series_type {
+            SeriesType::Ohlc => draw_ohlc_bars(b, 0, state),
+            SeriesType::Candlestick => draw_candlestick_bars(b, 0, state),
+            SeriesType::Line => draw_line_series_from_ohlc(b, 0, state),
+            SeriesType::Area => {
+                let points = ohlc_to_line_points(&state.data.bars);
+                let opts = crate::series::AreaSeriesOptions::default();
+                draw_area_series(b, 0, state, &points, &opts);
+            }
+            SeriesType::Baseline => {
+                let points = ohlc_to_line_points(&state.data.bars);
+                let opts = crate::series::BaselineSeriesOptions::default();
+                draw_baseline_series(b, 0, state, &points, &opts);
+            }
+            SeriesType::Histogram => {
+                let points: Vec<crate::series::HistogramDataPoint> = state
+                    .data
+                    .bars
+                    .iter()
+                    .map(|bar| crate::series::HistogramDataPoint {
+                        time: bar.time,
+                        value: bar.close,
+                        color: None,
+                    })
+                    .collect();
+                let opts = crate::series::HistogramSeriesOptions::default();
+                draw_histogram_series(b, 0, state, &points, &opts);
+            }
+        }
+    }
+
+    // Draw additional series assigned to this pane
+    for series in &state.series.series {
+        if !series.visible || series.pane_index != pane_idx {
+            continue;
+        }
+        match (&series.series_type, &series.data) {
+            (SeriesType::Line, SeriesData::Line(pts)) => {
+                draw_line_series(b, pane_idx, state, pts, &series.line_options);
+            }
+            (SeriesType::Area, SeriesData::Line(pts)) => {
+                draw_area_series(b, pane_idx, state, pts, &series.area_options);
+            }
+            (SeriesType::Baseline, SeriesData::Line(pts)) => {
+                draw_baseline_series(b, pane_idx, state, pts, &series.baseline_options);
+            }
+            (SeriesType::Candlestick, SeriesData::Ohlc(bars)) => {
+                draw_candlestick_bars_data(b, pane_idx, state, bars, &series.candlestick_options);
+            }
+            (SeriesType::Histogram, SeriesData::Histogram(pts)) => {
+                draw_histogram_series(b, pane_idx, state, pts, &series.histogram_options);
+            }
+            _ => {}
+        }
+    }
+
+    // Per-pane overlays (price lines and last value marker for this pane)
+    if pane_idx == 0 {
+        draw_price_lines(b, state, pane_idx);
+        draw_series_markers(b, state);
+        draw_last_value_marker(b, state, pane_idx);
+    }
 }
 
 /// Render only the crosshair layer. This is cheap — just 2 dashed lines + labels.
@@ -210,6 +163,91 @@ pub fn render_crosshair_scene<'a>(b: &mut IcedBackend<'a>, state: &ChartState) {
     let sf = state.layout.scale_factor;
     b.set_scale(sf, sf);
     draw_crosshair(b, state);
+}
+
+/// Render only the crosshair layer constrained to a single pane. Used by
+/// the multi-canvas widget tree where each pane canvas draws its own
+/// slice of the crosshair.
+pub fn render_crosshair_for_pane<'a>(pane_idx: usize, b: &mut IcedBackend<'a>, state: &ChartState) {
+    if !state.crosshair.visible {
+        return;
+    }
+    let sf = state.layout.scale_factor;
+    b.set_scale(sf, sf);
+    draw_crosshair_for_pane(pane_idx, b, state);
+}
+
+/// Render the axis elements for a single pane in the multi-canvas
+/// widget tree. Each pane canvas must draw its own portion of the
+/// chart's axes because the canvas clips rendering to its own bounds.
+///
+/// Specifically:
+/// - Y-axis gutter background + price labels for **this pane's** price scale
+/// - Price line labels and last value label (pane 0 only)
+/// - Crosshair price label on the Y-axis gutter (active pane only)
+/// - X-axis time labels (bottom-most pane only)
+pub fn render_pane_axes<'a>(pane_idx: usize, b: &mut IcedBackend<'a>, state: &ChartState) {
+    let layout = &state.layout;
+    let sf = layout.scale_factor;
+    b.set_scale(sf, sf);
+
+    // ── Y-axis gutter background ────────────────────────────────
+    // Fills the full chart-height gutter at the right edge. The
+    // canvas automatically clips this to the pane's own bounds, so
+    // only the relevant vertical slice is visible.
+    let gutter_x = (layout.plot_area.x + layout.plot_area.width) as f64;
+    let gutter_w = layout.margins.right as f64;
+    b.fill_rect(gutter_x, 0.0, gutter_w, layout.height as f64, BG_COLOR);
+
+    // ── Price scale labels for this pane ─────────────────────────
+    if let Some(pane) = state.panes.get(pane_idx) {
+        let price_ticks = generate_price_ticks(&pane.price_scale, &pane.layout_rect);
+        let x_start = (layout.plot_area.x + layout.plot_area.width + 5.0) as f64;
+        for tick in &price_ticks {
+            let y = snap_y(tick.coord as f64, sf);
+            b.draw_text(
+                &format!("{:.2}", tick.value),
+                x_start,
+                y + 4.0,
+                LABEL_FONT_SIZE,
+                TEXT_COLOR,
+            );
+        }
+
+        // ── Crosshair price label on Y-axis gutter ────────────
+        if state.crosshair.visible && state.active_pane == pane_idx {
+            let plot = &pane.layout_rect;
+            let y = snap_y(state.crosshair.y as f64, sf);
+            if y >= plot.y as f64 && y <= (plot.y + plot.height) as f64 {
+                let label = format!("{:.2}", state.crosshair.price.unwrap_or(0.0));
+                let label_x = (layout.plot_area.x + layout.plot_area.width + 2.0) as f64;
+                let label_w = (layout.margins.right - 4.0) as f64;
+                let label_h = 18.0;
+                let label_y = y - label_h / 2.0;
+                b.fill_rect(
+                    label_x,
+                    label_y,
+                    label_w,
+                    label_h,
+                    Palette::CrosshairLabelBg.color(),
+                );
+                b.draw_text(&label, label_x + 4.0, label_y + 13.0, 10.0, WHITE);
+            }
+        }
+    }
+
+    // ── Price line labels (pane 0 only) ──────────────────────────
+    if pane_idx == 0 {
+        draw_price_line_labels(b, state);
+        draw_last_value_label(b, state);
+    }
+
+    // ── X-axis time labels (bottom-most pane only) ──────────────
+    if pane_idx == state.panes.len().saturating_sub(1) {
+        let time_ticks =
+            generate_time_ticks(&state.data.bars, &state.time_scale, &layout.plot_area);
+        draw_x_axis(b, &time_ticks, layout);
+    }
 }
 
 fn draw_background<'a>(b: &mut IcedBackend<'a>, layout: &crate::chart_model::ChartLayout) {
@@ -322,12 +360,15 @@ fn draw_ohlc_bars<'a>(b: &mut IcedBackend<'a>, pane_index: usize, state: &ChartS
 }
 
 fn draw_crosshair<'a>(b: &mut IcedBackend<'a>, state: &ChartState) {
+    // In multi-canvas mode this entry point is unused; callers use
+    // `draw_crosshair_for_pane` for each pane canvas. We keep it as a
+    // thin wrapper for legacy single-canvas callers.
     let plot = &state.layout.plot_area;
     let sf = state.layout.scale_factor;
     let x = snap_x(state.crosshair.x as f64, sf);
     let y = snap_y(state.crosshair.y as f64, sf);
 
-    // Vertical dashed line
+    // Vertical dashed line spans the full plot area.
     b.stroke_dashed_line(
         x,
         plot.y as f64,
@@ -339,18 +380,20 @@ fn draw_crosshair<'a>(b: &mut IcedBackend<'a>, state: &ChartState) {
         4.0,
     );
 
-    // Horizontal dashed line — only within the active pane
-    let active_rect = &state.panes[state.active_pane].layout_rect;
-    b.stroke_dashed_line(
-        active_rect.x as f64,
-        y,
-        (active_rect.x + active_rect.width) as f64,
-        y,
-        CROSSHAIR_COLOR,
-        1.0,
-        4.0,
-        4.0,
-    );
+    // Horizontal dashed line within the active pane.
+    if let Some(active) = state.panes.get(state.active_pane) {
+        let active_rect = &active.layout_rect;
+        b.stroke_dashed_line(
+            active_rect.x as f64,
+            y,
+            (active_rect.x + active_rect.width) as f64,
+            y,
+            CROSSHAIR_COLOR,
+            1.0,
+            4.0,
+            4.0,
+        );
+    }
 
     // Price label on Y-axis
     if let Some(price) = state.crosshair.price {
@@ -391,6 +434,45 @@ fn draw_crosshair<'a>(b: &mut IcedBackend<'a>, state: &ChartState) {
                 Palette::CrosshairInfoBg.color(),
             );
             b.draw_text(&info, info_x + 8.0, info_y + 14.0, 10.0, TEXT_COLOR);
+        }
+    }
+}
+
+/// Draw the crosshair contribution that lives inside a single pane:
+/// the vertical dashed line (full plot height) and, if this pane is
+/// the active pane, the horizontal dashed line within its rect.
+fn draw_crosshair_for_pane<'a>(pane_idx: usize, b: &mut IcedBackend<'a>, state: &ChartState) {
+    let plot = &state.layout.plot_area;
+    let sf = state.layout.scale_factor;
+    let x = snap_x(state.crosshair.x as f64, sf);
+    let y = snap_y(state.crosshair.y as f64, sf);
+
+    // Vertical dashed line spans the full plot area (drawn in every pane).
+    b.stroke_dashed_line(
+        x,
+        plot.y as f64,
+        x,
+        (plot.y + plot.height) as f64,
+        CROSSHAIR_COLOR,
+        1.0,
+        4.0,
+        4.0,
+    );
+
+    // Horizontal dashed line only inside the active pane.
+    if state.active_pane == pane_idx {
+        if let Some(active) = state.panes.get(pane_idx) {
+            let active_rect = &active.layout_rect;
+            b.stroke_dashed_line(
+                active_rect.x as f64,
+                y,
+                (active_rect.x + active_rect.width) as f64,
+                y,
+                CROSSHAIR_COLOR,
+                1.0,
+                4.0,
+                4.0,
+            );
         }
     }
 }

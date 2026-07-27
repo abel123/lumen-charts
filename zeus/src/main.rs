@@ -24,7 +24,7 @@
 use iced::widget::{button, column, text, Column, Row, Space};
 use iced::{Element, Length, Task};
 
-use lumen_charts_sdk::renderers::iced::IcedChart;
+use lumen_charts_sdk::renderers::iced::{ChartWithSeparators, SeparatorMessage};
 use lumen_charts_sdk::sample_data::sample_data;
 use lumen_charts_sdk::{
     ChartApi, Color, HistogramDataPoint, LineDataPoint, OhlcBar, PaneApi, SeriesApi,
@@ -113,11 +113,18 @@ enum Message {
     FitContent,
     ToggleOverlay,
     ToggleMacd,
+    Separator(SeparatorMessage),
+}
+
+impl From<SeparatorMessage> for Message {
+    fn from(sep: SeparatorMessage) -> Self {
+        Message::Separator(sep)
+    }
 }
 
 struct ChartApp {
     /// The SDK widget — owns the chart. Use `with_chart_mut(...)` to mutate.
-    chart_view: IcedChart,
+    chart_view: ChartWithSeparators,
     current_series_type: usize,
     overlay_active: bool,
     overlay_series: Option<SeriesApi>,
@@ -148,7 +155,7 @@ impl ChartApp {
         chart.render();
 
         Self {
-            chart_view: IcedChart::new(chart),
+            chart_view: ChartWithSeparators::new(chart),
             current_series_type: 0,
             overlay_active: false,
             overlay_series: None,
@@ -253,6 +260,25 @@ fn update(state: &mut ChartApp, message: Message) -> Task<Message> {
         Message::FitContent => state.fit_content(),
         Message::ToggleOverlay => state.toggle_overlay(),
         Message::ToggleMacd => state.toggle_macd(),
+        Message::Separator(SeparatorMessage::Drag {
+            pane_index,
+            pixel_height,
+        }) => {
+            let total = state
+                .chart_view
+                .chart_handle()
+                .borrow()
+                .plot_area_height()
+                .max(1.0);
+            let frac = (pixel_height / total).clamp(0.05, 0.95);
+            let pane = PaneApi::from_index(pane_index as u32);
+            state
+                .chart_view
+                .chart_handle()
+                .borrow_mut()
+                .set_pane_height_fraction(&pane, frac);
+            let _ = pane_index;
+        }
     }
     Task::none()
 }
@@ -323,7 +349,7 @@ fn view(state: &ChartApp) -> Column<'_, Message, iced::Theme, iced::Renderer> {
     // Build the chart widget. The widget owns the chart internally, so
     // we can construct it here and pass it straight into the column.
     let chart_widget: Element<'_, Message, iced::Theme, iced::Renderer> =
-        state.chart_view.clone().canvas().into();
+        state.chart_view.clone().view(Message::Separator).into();
 
     column![toolbar, chart_widget]
 }

@@ -335,8 +335,6 @@ impl ChartState {
             return;
         }
 
-        // Between panes, we could leave a 1 or 2 pixel gap. Let's do 1px for now,
-        // or just no gap since we can draw a separator.
         let num_panes = self.panes.len() as f32;
         let gap = 1.0;
         let available_height = self.layout.plot_area.height - (gap * (num_panes - 1.0).max(0.0));
@@ -353,6 +351,119 @@ impl ChartState {
             };
             current_y += pane_height + gap;
         }
+    }
+
+    /// Get the Y coordinate of the separator line below pane `pane_index`.
+    /// Returns None if the index is out of bounds or it's the last pane.
+    pub fn separator_y(&self, pane_index: usize) -> Option<f32> {
+        if pane_index >= self.panes.len().saturating_sub(1) {
+            return None;
+        }
+        let pane = &self.panes[pane_index];
+        Some(pane.layout_rect.y + pane.layout_rect.height)
+    }
+
+    /// Hit-test: returns the index of the separator below the pane if the
+    /// given y coordinate is within `hit_radius` of a separator line.
+    /// Returns None if not hovering over any separator.
+    pub fn hit_separator(&self, y: f32, hit_radius: f32) -> Option<usize> {
+        for i in 0..self.panes.len().saturating_sub(1) {
+            if let Some(sep_y) = self.separator_y(i) {
+                if (y - sep_y).abs() <= hit_radius {
+                    return Some(i);
+                }
+            }
+        }
+        None
+    }
+
+    /// Set the height stretch of pane at `index` by dragging a separator.
+    /// The `delta_y` is the pixel amount the separator was dragged down
+    /// (positive = pane below shrinks, pane above grows).
+    pub fn drag_separator(&mut self, pane_index: usize, delta_y: f32) -> bool {
+        let next_index = pane_index + 1;
+        if next_index >= self.panes.len() {
+            return false;
+        }
+
+        let total_height = self.layout.plot_area.height.max(1.0);
+        let total_stretch: f32 = self.panes.iter().map(|p| p.height_stretch).sum();
+
+        let pane = &self.panes[pane_index];
+        let next_pane = &self.panes[next_index];
+
+        let current_pane_height = pane.layout_rect.height;
+        let current_next_height = next_pane.layout_rect.height;
+
+        let new_pane_height = (current_pane_height + delta_y).max(20.0);
+        let new_next_height = (current_next_height - delta_y).max(20.0);
+
+        let new_pane_stretch = total_stretch * (new_pane_height / total_height);
+        let new_next_stretch = total_stretch * (new_next_height / total_height);
+
+        let clamped_pane = new_pane_stretch.clamp(crate::MIN_PANE_STRETCH, crate::MAX_PANE_STRETCH);
+        let clamped_next = new_next_stretch.clamp(crate::MIN_PANE_STRETCH, crate::MAX_PANE_STRETCH);
+
+        self.panes[pane_index].height_stretch = clamped_pane;
+        self.panes[next_index].height_stretch = clamped_next;
+
+        self.update_panes_layout();
+        self.update_price_scale();
+        true
+    }
+
+    /// Number of separators (panes - 1).
+    pub fn separator_count(&self) -> usize {
+        self.panes.len().saturating_sub(1)
+    }
+
+    /// Set the height of pane at `index` as a fraction of the total chart height.
+    /// The fractions of all panes must sum to 1.0 after calling this method.
+    /// Internally stored as a `height_stretch` value consistent with
+    /// [`Self::update_panes_layout`].
+    ///
+    /// Returns `true` if the layout actually changed.
+    pub fn set_pane_height_fraction(
+        &mut self,
+        pane_index: usize,
+        fraction: f32,
+    ) -> bool {
+        if pane_index >= self.panes.len() {
+            return false;
+        }
+        let total_stretch: f32 = self.panes.iter().map(|p| p.height_stretch).sum();
+        if total_stretch <= 0.0 {
+            return false;
+        }
+
+        // Convert the requested fraction to a stretch by scaling so that
+        // the total stretches sum to the previous total. We then clamp to
+        // MIN/MAX to preserve the same protection as `drag_separator`.
+        let new_stretch = total_stretch * fraction.clamp(0.0, 1.0);
+
+        let old_stretch = self.panes[pane_index].height_stretch;
+        let clamped = new_stretch.clamp(crate::MIN_PANE_STRETCH, crate::MAX_PANE_STRETCH);
+
+        if (clamped - old_stretch).abs() < f32::EPSILON {
+            return false;
+        }
+
+        self.panes[pane_index].height_stretch = clamped;
+        self.update_panes_layout();
+        self.update_price_scale();
+        true
+    }
+
+    /// Get the current height fraction (0..=1) of pane at `index`.
+    pub fn pane_height_fraction(&self, pane_index: usize) -> f32 {
+        if pane_index >= self.panes.len() {
+            return 0.0;
+        }
+        let total_stretch: f32 = self.panes.iter().map(|p| p.height_stretch).sum();
+        if total_stretch <= 0.0 {
+            return 0.0;
+        }
+        self.panes[pane_index].height_stretch / total_stretch
     }
 
     /// Update price scale to fit visible data for all panes

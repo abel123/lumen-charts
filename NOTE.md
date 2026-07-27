@@ -1,0 +1,1 @@
++ iced canvas with_clip 有个坑，前边没有使用 with_clip 绘制的话，顺序会错乱。先调用的，有可能后渲染。
