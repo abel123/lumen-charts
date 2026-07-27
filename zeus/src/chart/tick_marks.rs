@@ -1,7 +1,7 @@
-use crate::chart_model::OhlcBar;
-use crate::chart_model::Rect;
-use crate::price_scale::PriceScale;
-use crate::time_scale::TimeScale;
+use super::chart_model::OhlcBar;
+use super::chart_model::Rect;
+use super::price_scale::PriceScale;
+use super::time_scale::TimeScale;
 
 /// A tick mark with its position and label text
 pub struct TickMark {

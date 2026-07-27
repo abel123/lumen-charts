@@ -40,10 +40,9 @@
 //  Chart — owns state + a renderer pipeline (safe Rust API)
 // ════════════════════════════════════════════════════════════════════════════
 
-use crate::{
-    chart_model::ChartData, chart_state::ChartState, invalidation::InvalidationLevel,
-    series::Series, HistogramDataPoint, LineDataPoint, OhlcBar, PriceLineOptions, SeriesType,
-};
+use super::chart_model::{ChartData, OhlcBar};
+use super::series::{HistogramDataPoint, LineDataPoint, PriceLineOptions, SeriesType};
+use super::{chart_state::ChartState, invalidation::InvalidationLevel, series::Series};
 
 /// Chart handle — owns the chart engine state.
 ///
@@ -146,7 +145,7 @@ impl Chart {
 
     /// Handle a keyboard key-down event. Returns true if a redraw is needed.
     pub fn key_down(&mut self, key_code: u32) -> bool {
-        let key = crate::chart_state::ChartKey::from_code(key_code);
+        let key = super::chart_state::ChartKey::from_code(key_code);
         self.state.key_down(key)
     }
 
@@ -251,7 +250,7 @@ impl Chart {
 
     /// Format a timestamp using the chart's date localization settings.
     pub fn format_date(&self, timestamp: i64) -> String {
-        crate::formatters::format_date_custom(
+        super::formatters::format_date_custom(
             timestamp,
             &self.state.options.localization.date_format,
         )
@@ -259,7 +258,7 @@ impl Chart {
 
     /// Format a timestamp using the chart's time localization settings.
     pub fn format_time(&self, timestamp: i64) -> String {
-        crate::formatters::format_time_custom(
+        super::formatters::format_time_custom(
             timestamp,
             &self.state.options.localization.time_format,
         )
@@ -402,7 +401,7 @@ impl Chart {
 
     /// Get the price scale mode for a pane: `false` = Normal, `true` = Logarithmic.
     pub fn price_scale_get_mode(&self, pane_index: u32) -> PriceScaleModeKind {
-        use crate::price_scale::PriceScaleMode;
+        use super::price_scale::PriceScaleMode;
         match self.state.panes.get(pane_index as usize) {
             Some(p) => match p.price_scale.mode {
                 PriceScaleMode::Logarithmic => PriceScaleModeKind::Logarithmic,
@@ -414,7 +413,7 @@ impl Chart {
 
     /// Set the price scale mode for a pane.
     pub fn price_scale_set_mode(&mut self, pane_index: u32, mode: PriceScaleModeKind) -> bool {
-        use crate::price_scale::PriceScaleMode;
+        use super::price_scale::PriceScaleMode;
         if let Some(pane) = self.state.panes.get_mut(pane_index as usize) {
             pane.price_scale.mode = match mode {
                 PriceScaleModeKind::Logarithmic => PriceScaleMode::Logarithmic,
@@ -474,7 +473,7 @@ impl Chart {
 
     /// Get the current price-scale options as a JSON string.
     pub fn price_scale_get_options(&self, pane_index: u32) -> String {
-        use crate::price_scale::PriceScaleMode;
+        use super::price_scale::PriceScaleMode;
         let pi = (pane_index as usize).min(self.state.panes.len().saturating_sub(1));
         let ps = &self.state.panes[pi].price_scale;
         let mode_str = match ps.mode {

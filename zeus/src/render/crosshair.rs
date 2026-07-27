@@ -1,6 +1,6 @@
 use super::{CROSSHAIR_COLOR, TEXT_COLOR, WHITE};
-use crate::chart_state::ChartState;
-use crate::color::Palette;
+use crate::chart::chart_state::ChartState;
+use crate::chart::color::Palette;
 use crate::widget::{snap_x, snap_y, IcedBackend};
 
 pub fn draw_crosshair<'a>(b: &mut IcedBackend<'a>, state: &ChartState) {

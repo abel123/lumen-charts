@@ -4,7 +4,7 @@
 //! This trait captures the shared behavior so that sub-API objects (ITimeScaleApi,
 //! IPriceScaleApi) can be built from a common interface.
 
-use crate::chart_model::Rect;
+use super::chart_model::Rect;
 
 /// Shared behavior for any scale axis (time or price).
 ///
@@ -23,7 +23,7 @@ pub trait Scale {
 
 // -- Implementations --
 
-impl Scale for crate::time_scale::TimeScale {
+impl Scale for super::time_scale::TimeScale {
     fn value_to_coordinate(&self, value: f64, rect: &Rect) -> f32 {
         self.logical_to_x(value as f32, rect)
     }
@@ -39,7 +39,7 @@ impl Scale for crate::time_scale::TimeScale {
     }
 }
 
-impl Scale for crate::price_scale::PriceScale {
+impl Scale for super::price_scale::PriceScale {
     fn value_to_coordinate(&self, value: f64, rect: &Rect) -> f32 {
         self.price_to_y(value, rect)
     }
@@ -59,8 +59,10 @@ impl Scale for crate::price_scale::PriceScale {
 
 #[cfg(test)]
 mod tests {
+    use crate::chart::price_scale::PriceScale;
+    use crate::chart::time_scale::TimeScale;
+    use super::super::chart_model::OhlcBar;
     use super::*;
-    use crate::chart_model::OhlcBar;
 
     fn make_rect() -> Rect {
         Rect {
@@ -73,7 +75,7 @@ mod tests {
 
     #[test]
     fn test_time_scale_roundtrip_via_trait() {
-        let ts = crate::time_scale::TimeScale::new(100, 800.0);
+        let ts = TimeScale::new(100, 800.0);
         let rect = make_rect();
         let value = 50.0_f64;
         let coord = ts.value_to_coordinate(value, &rect);
@@ -93,7 +95,7 @@ mod tests {
             low: 100.0,
             close: 150.0,
         }];
-        let ps = crate::price_scale::PriceScale::from_data(&bars);
+        let ps = PriceScale::from_data(&bars);
         let rect = make_rect();
         let value = 150.0_f64;
         let coord = ps.value_to_coordinate(value, &rect);
@@ -106,7 +108,7 @@ mod tests {
 
     #[test]
     fn test_time_scale_visible_range() {
-        let ts = crate::time_scale::TimeScale::new(100, 800.0);
+        let ts =TimeScale::new(100, 800.0);
         let rect = make_rect();
         let (first, last) = Scale::visible_range(&ts, &rect);
         assert!(first >= 0.0);
@@ -123,7 +125,7 @@ mod tests {
             low: 100.0,
             close: 150.0,
         }];
-        let ps = crate::price_scale::PriceScale::from_data(&bars);
+        let ps = PriceScale::from_data(&bars);
         let rect = make_rect();
         let (min, max) = ps.visible_range(&rect);
         assert!(min < 100.0, "min should include margin below data");
@@ -134,8 +136,8 @@ mod tests {
     fn test_both_scales_implement_trait() {
         // Compile-time test: both types can be used as `dyn Scale`
         fn accepts_scale(_s: &dyn Scale) {}
-        let ts = crate::time_scale::TimeScale::new(50, 400.0);
-        let ps = crate::price_scale::PriceScale::from_data(&[]);
+        let ts = TimeScale::new(50, 400.0);
+        let ps =PriceScale::from_data(&[]);
         accepts_scale(&ts);
         accepts_scale(&ps);
     }

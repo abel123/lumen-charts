@@ -1,7 +1,7 @@
-use crate::chart_model::OhlcBar;
-use crate::color::{Color, ColorName};
+use super::chart_model::OhlcBar;
+use super::color::{Color, ColorName};
 use serde::{Deserialize, Serialize};
-
+use crate::chart::chart_options;
 // ---------------------------------------------------------------------------
 // Series types
 // ---------------------------------------------------------------------------
@@ -592,7 +592,7 @@ impl Series {
         match self.series_type {
             SeriesType::Ohlc | SeriesType::Candlestick => {
                 if let Ok(mut full) = serde_json::to_value(&self.candlestick_options) {
-                    crate::chart_options::merge_json(&mut full, partial);
+                    chart_options::merge_json(&mut full, partial);
                     if let Ok(new_opts) = serde_json::from_value(full) {
                         self.candlestick_options = new_opts;
                         return true;
@@ -601,7 +601,7 @@ impl Series {
             }
             SeriesType::Line => {
                 if let Ok(mut full) = serde_json::to_value(&self.line_options) {
-                    crate::chart_options::merge_json(&mut full, partial);
+                    chart_options::merge_json(&mut full, partial);
                     if let Ok(new_opts) = serde_json::from_value(full) {
                         self.line_options = new_opts;
                         return true;
@@ -610,7 +610,7 @@ impl Series {
             }
             SeriesType::Area => {
                 if let Ok(mut full) = serde_json::to_value(&self.area_options) {
-                    crate::chart_options::merge_json(&mut full, partial);
+                   chart_options::merge_json(&mut full, partial);
                     if let Ok(new_opts) = serde_json::from_value(full) {
                         self.area_options = new_opts;
                         return true;
@@ -619,7 +619,7 @@ impl Series {
             }
             SeriesType::Histogram => {
                 if let Ok(mut full) = serde_json::to_value(&self.histogram_options) {
-                    crate::chart_options::merge_json(&mut full, partial);
+                    chart_options::merge_json(&mut full, partial);
                     if let Ok(new_opts) = serde_json::from_value(full) {
                         self.histogram_options = new_opts;
                         return true;
@@ -628,7 +628,7 @@ impl Series {
             }
             SeriesType::Baseline => {
                 if let Ok(mut full) = serde_json::to_value(&self.baseline_options) {
-                    crate::chart_options::merge_json(&mut full, partial);
+                    chart_options::merge_json(&mut full, partial);
                     if let Ok(new_opts) = serde_json::from_value(full) {
                         self.baseline_options = new_opts;
                         return true;

@@ -1,7 +1,7 @@
 /// Chart configuration options — mirrors LWC's ChartOptions / TimeChartOptions.
 ///
 /// All colors use the `Color` newtype (RGBA f32, 0.0–1.0).
-use crate::color::{Color, ColorName};
+use super::color::{Color, ColorName};
 use serde::{Deserialize, Serialize};
 
 /// Price formatting configuration

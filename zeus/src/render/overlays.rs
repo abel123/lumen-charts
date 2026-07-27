@@ -1,6 +1,6 @@
 use super::{BEAR_COLOR, BULL_COLOR, LABEL_FONT_SIZE, WHITE};
-use crate::chart_state::ChartState;
-use crate::overlays::{LineStyle, MarkerPosition, MarkerShape};
+use crate::chart::chart_state::ChartState;
+use crate::chart::overlays::{LineStyle, MarkerPosition, MarkerShape};
 use crate::widget::{snap_y, IcedBackend};
 
 /// Draw price line indicators (horizontal lines) within a specific pane.

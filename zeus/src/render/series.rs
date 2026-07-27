@@ -1,8 +1,8 @@
 use super::{BEAR_COLOR, BULL_COLOR};
-use crate::chart_model::OhlcBar;
-use crate::chart_state::ChartState;
-use crate::color::Color;
-use crate::series::{
+use crate::chart::chart_model::OhlcBar;
+use crate::chart::chart_state::ChartState;
+use crate::chart::color::Color;
+use crate::chart::series::{
     AreaSeriesOptions, BaselineSeriesOptions, CandlestickOptions, HistogramDataPoint,
     HistogramSeriesOptions, LineDataPoint, LineSeriesOptions, LineType,
 };

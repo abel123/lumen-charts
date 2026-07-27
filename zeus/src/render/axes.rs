@@ -1,12 +1,12 @@
 use super::{BG_COLOR, LABEL_FONT_SIZE, TEXT_COLOR};
-use crate::chart_state::ChartState;
-use crate::tick_marks::{generate_price_ticks, TickMark};
+use crate::chart::chart_state::ChartState;
+use crate::chart::tick_marks::{generate_price_ticks, TickMark};
 use crate::widget::{snap_x, snap_y, IcedBackend};
 
 pub fn draw_y_axis<'a>(
     b: &mut IcedBackend<'a>,
     state: &ChartState,
-    layout: &crate::chart_model::ChartLayout,
+    layout: &crate::chart::chart_model::ChartLayout,
 ) {
     let gutter_x = (layout.plot_area.x + layout.plot_area.width) as f64;
     let gutter_w = layout.margins.right as f64;
@@ -34,7 +34,7 @@ pub fn draw_y_axis<'a>(
 pub fn draw_x_axis<'a>(
     b: &mut IcedBackend<'a>,
     time_ticks: &[TickMark],
-    layout: &crate::chart_model::ChartLayout,
+    layout: &crate::chart::chart_model::ChartLayout,
 ) {
     let plot = &layout.plot_area;
 

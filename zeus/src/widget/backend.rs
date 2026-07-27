@@ -2,8 +2,8 @@ use iced::widget::canvas::gradient::Linear;
 use iced::widget::canvas::{Frame, Gradient, LineDash, Path, Stroke, Style};
 use iced::{Pixels, Point};
 
-use crate::chart_state::ChartState;
-use crate::color::{Color, GradientStop};
+use crate::chart::chart_state::ChartState;
+use crate::chart::color::{Color, GradientStop};
 use crate::render::{
     render_bottom_scene, render_crosshair_for_pane, render_crosshair_scene, render_pane,
     render_pane_axes,

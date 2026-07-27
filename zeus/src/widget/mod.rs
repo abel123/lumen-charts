@@ -46,7 +46,7 @@ use iced::mouse::Cursor as IcedCursor;
 use iced::widget::canvas::{Action, Canvas, Event, Frame, Geometry, Program};
 use iced::{mouse, Rectangle, Renderer as IcedRenderer, Theme};
 
-use crate::color::Palette;
+use crate::chart::color::Palette;
 use crate::widget::backend::c4_to_iced;
 use crate::ChartApi;
 
@@ -56,7 +56,7 @@ mod programs;
 pub use backend::{snap_x, snap_y, IcedBackend};
 
 use backend::paint_to_iced_frame;
-use programs::{pane_canvas, SinglePaneProgram};
+use programs::pane_canvas;
 
 // ════════════════════════════════════════════════════════════════════════════
 //  Separator styling — make pane splits invisible when not focused
@@ -392,10 +392,6 @@ impl ChartWidget {
         let pane_count = self.pane_count();
         debug_assert!(pane_count >= 1);
 
-        if pane_count == 1 {
-            return single_pane_canvas::<Message>(self.chart.clone());
-        }
-
         {
             let mut sizes = self.pane_sizes.borrow_mut();
             if sizes.len() != pane_count {
@@ -478,24 +474,10 @@ impl ChartWidget {
     }
 }
 
-/// Build a Canvas widget for the single-pane case (no separator needed).
-fn single_pane_canvas<Message: 'static + Clone>(
-    chart: Rc<RefCell<ChartApi>>,
-) -> iced::Element<'static, Message, Theme, IcedRenderer> {
-    let program = SinglePaneProgram {
-        chart: chart.clone(),
-        last_size: Rc::new(Cell::new((0, 0))),
-    };
-    Canvas::new(program)
-        .width(iced::Length::Fill)
-        .height(iced::Length::Fill)
-        .into()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::color::Color;
+    use crate::chart::color::Color;
 
     #[test]
     fn color_conversion_preserves_components() {

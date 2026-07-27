@@ -1,4 +1,4 @@
-use crate::chart_model::OhlcBar;
+use super::chart_model::OhlcBar;
 
 /// Generate ~100 bars of realistic OHLCV data resembling AAPL daily prices
 pub fn sample_data() -> Vec<OhlcBar> {

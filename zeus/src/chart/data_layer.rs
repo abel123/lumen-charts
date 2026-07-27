@@ -1,4 +1,4 @@
-use crate::chart_model::OhlcBar;
+use crate::chart::chart_model::OhlcBar;
 
 /// Data management layer — set, update, pop, and query bar data.
 ///

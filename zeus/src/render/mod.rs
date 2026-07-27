@@ -1,7 +1,7 @@
-use crate::chart_state::ChartState;
-use crate::color::{Color, Palette};
-use crate::series::{SeriesData, SeriesType};
-use crate::tick_marks::{generate_price_ticks, generate_time_ticks};
+use crate::chart::chart_state::ChartState;
+use crate::chart::color::{Color, Palette};
+use crate::chart::series::{SeriesData, SeriesType};
+use crate::chart::tick_marks::{generate_price_ticks, generate_time_ticks};
 use crate::widget::{snap_y, IcedBackend};
 
 const LABEL_FONT_SIZE: f64 = 11.0;
@@ -102,26 +102,26 @@ pub fn render_pane<'a>(pane_idx: usize, b: &mut IcedBackend<'a>, state: &ChartSt
             SeriesType::Line => draw_line_series_from_ohlc(b, 0, state),
             SeriesType::Area => {
                 let points = ohlc_to_line_points(&state.data.bars);
-                let opts = crate::series::AreaSeriesOptions::default();
+                let opts = crate::chart::series::AreaSeriesOptions::default();
                 draw_area_series(b, 0, state, &points, &opts);
             }
             SeriesType::Baseline => {
                 let points = ohlc_to_line_points(&state.data.bars);
-                let opts = crate::series::BaselineSeriesOptions::default();
+                let opts = crate::chart::series::BaselineSeriesOptions::default();
                 draw_baseline_series(b, 0, state, &points, &opts);
             }
             SeriesType::Histogram => {
-                let points: Vec<crate::series::HistogramDataPoint> = state
+                let points: Vec<crate::chart::series::HistogramDataPoint> = state
                     .data
                     .bars
                     .iter()
-                    .map(|bar| crate::series::HistogramDataPoint {
+                    .map(|bar| crate::chart::series::HistogramDataPoint {
                         time: bar.time,
                         value: bar.close,
                         color: None,
                     })
                     .collect();
-                let opts = crate::series::HistogramSeriesOptions::default();
+                let opts = crate::chart::series::HistogramSeriesOptions::default();
                 draw_histogram_series(b, 0, state, &points, &opts);
             }
         }

@@ -1,9 +1,12 @@
 use super::{AXIS_COLOR, BG_COLOR};
-use crate::chart_state::ChartState;
-use crate::tick_marks::{generate_price_ticks, TickMark};
+use crate::chart::chart_state::ChartState;
+use crate::chart::tick_marks::{generate_price_ticks, TickMark};
 use crate::widget::{snap_x, snap_y, IcedBackend};
 
-pub fn draw_background<'a>(b: &mut IcedBackend<'a>, layout: &crate::chart_model::ChartLayout) {
+pub fn draw_background<'a>(
+    b: &mut IcedBackend<'a>,
+    layout: &crate::chart::chart_model::ChartLayout,
+) {
     b.fill_rect(
         0.0,
         0.0,

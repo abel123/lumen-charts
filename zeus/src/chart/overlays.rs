@@ -1,6 +1,5 @@
-use crate::chart_model::OhlcBar;
-use crate::color::{Color, ColorName};
-
+use super::chart_model::OhlcBar;
+use super::color::{Color, ColorName};
 // ---------------------------------------------------------------------------
 // Price lines: horizontal lines drawn at a specific price level
 // ---------------------------------------------------------------------------
@@ -500,10 +499,13 @@ mod tests {
         ));
         assert_eq!(ov.markers.len(), 1);
 
-        ov.set_markers(0, vec![
-            SeriesMarker::new(0, 200, MarkerShape::Square, MarkerPosition::AboveBar),
-            SeriesMarker::new(0, 300, MarkerShape::Square, MarkerPosition::AboveBar),
-        ]);
+        ov.set_markers(
+            0,
+            vec![
+                SeriesMarker::new(0, 200, MarkerShape::Square, MarkerPosition::AboveBar),
+                SeriesMarker::new(0, 300, MarkerShape::Square, MarkerPosition::AboveBar),
+            ],
+        );
         assert_eq!(ov.markers.len(), 2);
         assert_eq!(ov.markers[0].time, 200);
     }

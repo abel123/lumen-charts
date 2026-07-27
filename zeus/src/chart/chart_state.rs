@@ -1,10 +1,10 @@
-use crate::chart_model::{ChartData, ChartLayout, OhlcBar};
-use crate::chart_options::ChartOptions;
-use crate::invalidation::{InvalidateMask, InvalidationLevel};
-use crate::overlays::Overlays;
-use crate::price_scale::PriceScale;
-use crate::series::{SeriesCollection, SeriesType};
-use crate::time_scale::TimeScale;
+use super::chart_model::{ChartData, ChartLayout, OhlcBar};
+use super::chart_options::ChartOptions;
+use super::invalidation::{InvalidateMask, InvalidationLevel};
+use super::overlays::Overlays;
+use super::price_scale::PriceScale;
+use super::series::{SeriesCollection, SeriesType};
+use super::time_scale::TimeScale;
 
 /// Crosshair position state
 #[derive(Debug, Clone, Default)]
@@ -126,11 +126,11 @@ const DBL_CLICK_MAX_FRAMES: u32 = 20; // ~20 frames ≈ 333ms at 60fps
 pub struct PaneState {
     pub price_scale: PriceScale,
     pub height_stretch: f32,
-    pub layout_rect: crate::chart_model::Rect,
+    pub layout_rect: super::chart_model::Rect,
 }
 
 impl PaneState {
-    pub fn new(price_scale: PriceScale, layout_rect: crate::chart_model::Rect) -> Self {
+    pub fn new(price_scale: PriceScale, layout_rect: super::chart_model::Rect) -> Self {
         Self {
             price_scale,
             height_stretch: 1.0,
@@ -346,7 +346,7 @@ impl ChartState {
 
         for pane in &mut self.panes {
             let pane_height = available_height * (pane.height_stretch / total_stretch);
-            pane.layout_rect = crate::chart_model::Rect {
+            pane.layout_rect = super::chart_model::Rect {
                 x: self.layout.plot_area.x,
                 y: current_y,
                 width: self.layout.plot_area.width,
@@ -405,9 +405,9 @@ impl ChartState {
         let new_next_stretch = total_stretch * (new_next_height / total_height);
 
         let clamped_pane =
-            new_pane_stretch.clamp(crate::api::MIN_PANE_STRETCH, crate::api::MAX_PANE_STRETCH);
+            new_pane_stretch.clamp(super::api::MIN_PANE_STRETCH, super::api::MAX_PANE_STRETCH);
         let clamped_next =
-            new_next_stretch.clamp(crate::api::MIN_PANE_STRETCH, crate::api::MAX_PANE_STRETCH);
+            new_next_stretch.clamp(super::api::MIN_PANE_STRETCH, super::api::MAX_PANE_STRETCH);
 
         self.panes[pane_index].height_stretch = clamped_pane;
         self.panes[next_index].height_stretch = clamped_next;
@@ -443,7 +443,7 @@ impl ChartState {
         let new_stretch = total_stretch * fraction.clamp(0.0, 1.0);
 
         let old_stretch = self.panes[pane_index].height_stretch;
-        let clamped = new_stretch.clamp(crate::api::MIN_PANE_STRETCH, crate::api::MAX_PANE_STRETCH);
+        let clamped = new_stretch.clamp(super::api::MIN_PANE_STRETCH, super::api::MAX_PANE_STRETCH);
 
         if (clamped - old_stretch).abs() < f32::EPSILON {
             return false;
@@ -504,7 +504,7 @@ impl ChartState {
             for series in self.series.series.iter() {
                 if series.pane_index == i && series.visible {
                     let series_min_max = match &series.data {
-                        crate::series::SeriesData::Line(pts) => {
+                        super::series::SeriesData::Line(pts) => {
                             let mut s_min = f64::INFINITY;
                             let mut s_max = f64::NEG_INFINITY;
 
@@ -520,7 +520,7 @@ impl ChartState {
                                 None
                             }
                         }
-                        crate::series::SeriesData::Ohlc(bars) => {
+                        super::series::SeriesData::Ohlc(bars) => {
                             let mut s_min = f64::INFINITY;
                             let mut s_max = f64::NEG_INFINITY;
                             for b in bars.iter() {
@@ -535,7 +535,7 @@ impl ChartState {
                                 None
                             }
                         }
-                        crate::series::SeriesData::Histogram(pts) => {
+                        super::series::SeriesData::Histogram(pts) => {
                             let mut s_min = f64::INFINITY;
                             let mut s_max = f64::NEG_INFINITY;
                             for pt in pts.iter() {
@@ -578,7 +578,7 @@ impl ChartState {
         let price_scale = PriceScale::from_data(&[]);
         let mut pane = PaneState::new(
             price_scale,
-            crate::chart_model::Rect {
+            super::chart_model::Rect {
                 x: 0.0,
                 y: 0.0,
                 width: 0.0,
@@ -715,7 +715,7 @@ impl ChartState {
 
             // Check crosshair mode
             match self.options.crosshair.mode {
-                crate::chart_options::CrosshairMode::Hidden => {
+                super::chart_options::CrosshairMode::Hidden => {
                     self.crosshair.visible = false;
                     // Still handle drag panning below
                 }
@@ -728,7 +728,7 @@ impl ChartState {
                         .x_to_nearest_index(x, &self.layout.plot_area);
 
                     // Magnet mode: snap Y to nearest bar close price
-                    if mode == crate::chart_options::CrosshairMode::Magnet {
+                    if mode == super::chart_options::CrosshairMode::Magnet {
                         if let Some(idx) = self.crosshair.bar_index {
                             if idx < self.data.bars.len() {
                                 let snap_price = self.data.bars[idx].close;
@@ -1229,17 +1229,17 @@ impl ChartState {
         }
         for series in &self.series.series {
             match &series.data {
-                crate::series::SeriesData::Line(pts) => {
+                super::series::SeriesData::Line(pts) => {
                     for pt in pts {
                         times.push(pt.time);
                     }
                 }
-                crate::series::SeriesData::Ohlc(bars) => {
+                super::series::SeriesData::Ohlc(bars) => {
                     for b in bars {
                         times.push(b.time);
                     }
                 }
-                crate::series::SeriesData::Histogram(pts) => {
+                super::series::SeriesData::Histogram(pts) => {
                     for pt in pts {
                         times.push(pt.time);
                     }
@@ -1297,7 +1297,7 @@ impl ChartState {
     // --- Series management (with invalidation) ---
 
     /// Add a series to the chart. Returns the series ID.
-    pub fn add_series(&mut self, series: crate::series::Series) -> u32 {
+    pub fn add_series(&mut self, series: super::series::Series) -> u32 {
         let id = self.series.add(series);
         self.rebuild_time_index();
         self.update_price_scale();
@@ -1333,12 +1333,12 @@ impl ChartState {
     /// Returns true on success, false for invalid codes.
     pub fn set_series_type(&mut self, code: u32) -> bool {
         let st = match code {
-            0 => crate::series::SeriesType::Ohlc,
-            1 => crate::series::SeriesType::Candlestick,
-            2 => crate::series::SeriesType::Line,
-            3 => crate::series::SeriesType::Area,
-            4 => crate::series::SeriesType::Histogram,
-            5 => crate::series::SeriesType::Baseline,
+            0 => super::series::SeriesType::Ohlc,
+            1 => super::series::SeriesType::Candlestick,
+            2 => super::series::SeriesType::Line,
+            3 => super::series::SeriesType::Area,
+            4 => super::series::SeriesType::Histogram,
+            5 => super::series::SeriesType::Baseline,
             _ => return false,
         };
         self.active_series_type = st;
@@ -1381,11 +1381,15 @@ impl ChartState {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::chart::chart_state::{ChartData, ChartKey, ChartState, HitZone, TouchGesture, TouchPoint};
+    use crate::chart::*;
+    use crate::chart::chart_model::OhlcBar;
+    use crate::chart::chart_options::ChartOptions;
+    use crate::chart::invalidation::InvalidationLevel;
 
     fn make_state() -> ChartState {
         let data = ChartData {
-            bars: crate::sample_data::sample_data(),
+            bars: sample_data::sample_data(),
         };
         ChartState::new(data, 800.0, 500.0, 1.0)
     }
@@ -1877,7 +1881,7 @@ mod tests {
     #[test]
     fn test_move_series_to_pane() {
         let mut state = make_state();
-        let series_id = state.series.add(crate::series::Series::line(0, vec![]));
+        let series_id = state.series.add(series::Series::line(0, vec![]));
         let pane_id = state.add_pane(1.0);
 
         let moved = state.move_series_to_pane(series_id, pane_id);
@@ -1888,7 +1892,7 @@ mod tests {
     #[test]
     fn test_remove_pane_moves_series_back() {
         let mut state = make_state();
-        let series_id = state.series.add(crate::series::Series::line(0, vec![]));
+        let series_id = state.series.add(series::Series::line(0, vec![]));
         let pane_id = state.add_pane(1.0);
         state.move_series_to_pane(series_id, pane_id);
         assert_eq!(state.series.get(series_id).unwrap().pane_index, 1);
@@ -1937,7 +1941,7 @@ mod tests {
     #[test]
     fn test_move_series_to_nonexistent_pane() {
         let mut state = make_state();
-        let series_id = state.series.add(crate::series::Series::line(0, vec![]));
+        let series_id = state.series.add(series::Series::line(0, vec![]));
         let moved = state.move_series_to_pane(series_id, 999);
         assert!(!moved);
         assert_eq!(state.series.get(series_id).unwrap().pane_index, 0);
@@ -1997,16 +2001,16 @@ mod tests {
 
         // Add a series with very different price range and move it to pane 1
         let pts = vec![
-            crate::series::LineDataPoint {
+            series::LineDataPoint {
                 time: state.data.bars[0].time,
                 value: 50000.0,
             },
-            crate::series::LineDataPoint {
+            series::LineDataPoint {
                 time: state.data.bars[1].time,
                 value: 60000.0,
             },
         ];
-        let series_id = state.series.add(crate::series::Series::line(0, pts));
+        let series_id = state.series.add(series::Series::line(0, pts));
         state.move_series_to_pane(series_id, pane_id);
 
         // Pane 0 scale should be unchanged (main OHLC data stays there)
@@ -2107,7 +2111,7 @@ mod tests {
         let mut state = make_state();
         let p1 = state.add_pane(1.0);
         let p2 = state.add_pane(1.0);
-        let series_id = state.series.add(crate::series::Series::line(0, vec![]));
+        let series_id = state.series.add(series::Series::line(0, vec![]));
         state.move_series_to_pane(series_id, p1);
         assert_eq!(state.series.get(series_id).unwrap().pane_index, 1);
 
@@ -2117,8 +2121,6 @@ mod tests {
     }
 
     // ---- Invalidation level from interactions ----
-
-    use crate::invalidation::InvalidationLevel;
 
     #[test]
     fn test_pointer_move_produces_cursor_level() {
@@ -2189,7 +2191,7 @@ mod tests {
     fn test_set_data_produces_light_level() {
         let mut state = make_state();
         state.consume_mask();
-        state.set_data(vec![crate::chart_model::OhlcBar {
+        state.set_data(vec![chart_model::OhlcBar {
             time: 1,
             open: 100.0,
             high: 110.0,
@@ -2568,14 +2570,14 @@ mod tests {
         let mut state = ChartState::new(data, 800.0, 500.0, 1.0);
 
         // Add a line series with a point at time 150 (between bars)
-        let mut series = crate::series::Series::line(
+        let mut series =series::Series::line(
             0,
             vec![
-                crate::series::LineDataPoint {
+               series::LineDataPoint {
                     time: 150,
                     value: 55.0,
                 },
-                crate::series::LineDataPoint {
+               series::LineDataPoint {
                     time: 250,
                     value: 65.0,
                 },
@@ -2603,9 +2605,9 @@ mod tests {
         assert_eq!(state.time_points.len(), 2);
 
         // Add a series — should rebuild time index
-        let series = crate::series::Series::line(
+        let series = series::Series::line(
             0,
-            vec![crate::series::LineDataPoint {
+            vec![series::LineDataPoint {
                 time: 150,
                 value: 55.0,
             }],
@@ -2615,12 +2617,12 @@ mod tests {
 
         // Mutate series data directly and call series_data_changed
         if let Some(s) = state.series.series.iter_mut().find(|s| s.id == sid) {
-            s.data = crate::series::SeriesData::Line(vec![
-                crate::series::LineDataPoint {
+            s.data = series::SeriesData::Line(vec![
+                series::LineDataPoint {
                     time: 150,
                     value: 55.0,
                 },
-                crate::series::LineDataPoint {
+                series::LineDataPoint {
                     time: 175,
                     value: 57.0,
                 },
@@ -2637,9 +2639,9 @@ mod tests {
         let mut state = ChartState::new(data, 800.0, 500.0, 1.0);
 
         // Add series with extra time point
-        let series = crate::series::Series::line(
+        let series = series::Series::line(
             0,
-            vec![crate::series::LineDataPoint {
+            vec![series::LineDataPoint {
                 time: 150,
                 value: 55.0,
             }],
@@ -2666,14 +2668,14 @@ mod tests {
         state.add_pane(1.0);
 
         // Add a series to pane 1 with very different values
-        let mut series = crate::series::Series::line(
+        let mut series = series::Series::line(
             0,
             vec![
-                crate::series::LineDataPoint {
+                series::LineDataPoint {
                     time: 100,
                     value: 10.0,
                 },
-                crate::series::LineDataPoint {
+                series::LineDataPoint {
                     time: 200,
                     value: 20.0,
                 },
@@ -2728,20 +2730,20 @@ mod tests {
         state.add_pane(1.0);
 
         // Add histogram series to pane 1 with small values near zero
-        let mut series = crate::series::Series::histogram(
+        let mut series = series::Series::histogram(
             0,
             vec![
-                crate::series::HistogramDataPoint {
+                series::HistogramDataPoint {
                     time: 100,
                     value: 5.0,
                     color: None,
                 },
-                crate::series::HistogramDataPoint {
+                series::HistogramDataPoint {
                     time: 200,
                     value: -3.0,
                     color: None,
                 },
-                crate::series::HistogramDataPoint {
+                series::HistogramDataPoint {
                     time: 300,
                     value: 8.0,
                     color: None,
@@ -2830,23 +2832,23 @@ mod tests {
         let mut state = ChartState::new(data, 800.0, 500.0, 1.0);
 
         // Add a line series that skips time 300 (creating a gap)
-        let series = crate::series::Series::line(
+        let series = series::Series::line(
             0,
             vec![
-                crate::series::LineDataPoint {
+                series::LineDataPoint {
                     time: 100,
                     value: 10.0,
                 },
-                crate::series::LineDataPoint {
+                series::LineDataPoint {
                     time: 200,
                     value: 20.0,
                 },
                 // Gap at time 300 — series has no data here
-                crate::series::LineDataPoint {
+                series::LineDataPoint {
                     time: 400,
                     value: 40.0,
                 },
-                crate::series::LineDataPoint {
+                series::LineDataPoint {
                     time: 500,
                     value: 50.0,
                 },
@@ -2876,9 +2878,9 @@ mod tests {
         assert_eq!(state.time_points.len(), 2); // 100, 300
 
         // Add a series with time 200 — fills in the "whitespace" between bars
-        let series = crate::series::Series::line(
+        let series = series::Series::line(
             0,
-            vec![crate::series::LineDataPoint {
+            vec![series::LineDataPoint {
                 time: 200,
                 value: 60.0,
             }],
@@ -2900,14 +2902,14 @@ mod tests {
         let mut state = ChartState::new(data, 800.0, 500.0, 1.0);
 
         // Add series with overlapping timestamps — should not create duplicates
-        let series = crate::series::Series::line(
+        let series = series::Series::line(
             0,
             vec![
-                crate::series::LineDataPoint {
+                series::LineDataPoint {
                     time: 100,
                     value: 10.0,
                 },
-                crate::series::LineDataPoint {
+                series::LineDataPoint {
                     time: 200,
                     value: 20.0,
                 },
@@ -2930,30 +2932,30 @@ mod tests {
         state.add_pane(1.0);
 
         // Add 1-min resolution series to pane 1
-        let mut series = crate::series::Series::line(
+        let mut series = series::Series::line(
             0,
             vec![
-                crate::series::LineDataPoint {
+                series::LineDataPoint {
                     time: 620,
                     value: 10.0,
                 },
-                crate::series::LineDataPoint {
+                series::LineDataPoint {
                     time: 621,
                     value: 11.0,
                 },
-                crate::series::LineDataPoint {
+                series::LineDataPoint {
                     time: 622,
                     value: 12.0,
                 },
-                crate::series::LineDataPoint {
+                series::LineDataPoint {
                     time: 623,
                     value: 13.0,
                 },
-                crate::series::LineDataPoint {
+                series::LineDataPoint {
                     time: 624,
                     value: 14.0,
                 },
-                crate::series::LineDataPoint {
+                series::LineDataPoint {
                     time: 625,
                     value: 15.0,
                 },

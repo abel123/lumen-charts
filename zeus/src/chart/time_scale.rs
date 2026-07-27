@@ -1,4 +1,4 @@
-use crate::chart_model::Rect;
+use super::chart_model::Rect;
 
 /// Mutable time scale state — tracks scroll position and zoom level
 #[derive(Debug, Clone)]

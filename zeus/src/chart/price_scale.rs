@@ -1,4 +1,4 @@
-use crate::chart_model::{OhlcBar, Rect};
+use super::chart_model::{OhlcBar, Rect};
 
 /// Price scale mode (linear vs logarithmic)
 #[derive(Debug, Clone, Copy, PartialEq)]

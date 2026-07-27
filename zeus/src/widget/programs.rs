@@ -3,13 +3,11 @@ use std::rc::Rc;
 
 use iced::mouse::Cursor as IcedCursor;
 use iced::widget::canvas::{Action, Canvas, Event, Frame, Geometry, Program};
-use iced::{
-    mouse, Rectangle, Renderer as IcedRenderer, Theme,
-};
+use iced::{mouse, Rectangle, Renderer as IcedRenderer, Theme};
 
 use crate::ChartApi;
 
-use super::backend::{paint_pane_to_iced_frame, paint_to_iced_frame};
+use super::backend::paint_pane_to_iced_frame;
 
 /// Build a Canvas widget that paints only one pane of the chart.
 ///
@@ -194,42 +192,5 @@ impl<Message: 'static> Program<Message, Theme, IcedRenderer> for PaneCanvasProgr
         } else {
             mouse::Interaction::default()
         }
-    }
-}
-
-/// Canvas program for the single-pane fast path.
-pub struct SinglePaneProgram {
-    pub(super) chart: Rc<RefCell<ChartApi>>,
-    pub(super) last_size: Rc<Cell<(u32, u32)>>,
-}
-
-impl<Message: 'static> Program<Message, Theme, IcedRenderer> for SinglePaneProgram {
-    type State = ();
-
-    fn draw(
-        &self,
-        _state: &Self::State,
-        renderer: &IcedRenderer,
-        _theme: &Theme,
-        bounds: Rectangle,
-        _cursor: IcedCursor,
-    ) -> Vec<Geometry> {
-        let w = bounds.width.round().max(1.0) as u32;
-        let h = bounds.height.round().max(1.0) as u32;
-
-        let prev = self.last_size.get();
-        if prev != (w, h) {
-            self.last_size.set((w, h));
-            let mut c = self.chart.borrow_mut();
-            c.resize(w, h, 1.0);
-            c.render();
-        }
-
-        let mut frame = Frame::new(renderer, bounds.size());
-        {
-            let chart = self.chart.borrow();
-            paint_to_iced_frame(&mut frame, &chart.inner.state);
-        }
-        vec![frame.into_geometry()]
     }
 }
